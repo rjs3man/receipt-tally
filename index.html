@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Receipt Tally</title>
+  <meta name="description" content="Screenshot your receipts and card transactions; expenses are read and tallied automatically.">
+  <meta name="theme-color" content="#0f766e">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Cpath d='M10 7h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5-2 1.5z' fill='white'/%3E%3Cpath d='M13 12h6M13 16h6M13 20h4' stroke='%230f766e' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="var(--accent)"/><path d="M10 7h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5-2 1.5z" fill="#fff"/><path d="M13 12h6M13 16h6M13 20h4" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <span>Receipt Tally</span>
+    </div>
+    <nav class="month-nav" aria-label="Month">
+      <button class="icon-btn" id="prevMonth" aria-label="Previous month">&#8249;</button>
+      <span id="monthLabel" class="month-label"></span>
+      <button class="icon-btn" id="nextMonth" aria-label="Next month">&#8250;</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="drop" id="drop" tabindex="0" aria-label="Add receipt screenshots">
+      <input type="file" id="fileInput" accept="image/*" multiple hidden>
+      <div class="drop-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0-4.5 4.5M12 4l4.5 4.5M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div>
+        <strong>Drop receipt screenshots here</strong>
+        <p>or <button class="link" id="chooseBtn" type="button">choose images</button><span class="paste-hint"> &middot; or paste with <kbd>Ctrl</kbd>+<kbd>V</kbd></span></p>
+        <small>Works with paper receipts, e-receipts, and screenshots from your card's app. Text is read on your device; images never leave it.</small>
+      </div>
+    </section>
+
+    <section id="review" class="review" hidden aria-live="polite">
+      <div class="review-head">
+        <h2>Review scanned expenses</h2>
+        <div class="review-actions">
+          <button class="btn ghost" id="discardAll" type="button">Discard all</button>
+          <button class="btn primary" id="addAll" type="button">Add selected</button>
+        </div>
+      </div>
+      <div id="jobs"></div>
+    </section>
+
+    <section class="summary">
+      <div class="card total-card">
+        <div class="label">Spent in <span id="sumMonth"></span></div>
+        <div id="monthTotal" class="big">$0.00</div>
+        <div id="monthMeta" class="meta"></div>
+      </div>
+      <div class="card">
+        <div class="label">By category</div>
+        <div id="catBars" class="bars"></div>
+      </div>
+    </section>
+
+    <section class="card list-card">
+      <div class="list-head">
+        <h2>Expenses</h2>
+        <input type="search" id="search" placeholder="Search merchant or note" aria-label="Search expenses">
+        <button class="btn" id="addManual" type="button">+ Add manually</button>
+      </div>
+      <div id="list"></div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <button class="link" id="exportCsv" type="button">Export CSV</button>
+    <button class="link" id="backup" type="button">Back up data</button>
+    <button class="link" id="restoreBtn" type="button">Restore backup</button>
+    <input type="file" id="restoreInput" accept="application/json,.json" hidden>
+    <span class="muted">Your expenses are saved in this browser only.</span>
+  </footer>
+
+  <dialog id="editDialog">
+    <form method="dialog" id="editForm">
+      <h3 id="editTitle">Edit expense</h3>
+      <label>Merchant<input name="merchant" required autocomplete="off"></label>
+      <div class="row2">
+        <label>Amount<input name="amount" type="number" step="0.01" required inputmode="decimal"></label>
+        <label>Date<input name="date" type="date" required></label>
+      </div>
+      <label>Category<select name="category"></select></label>
+      <label>Note<input name="note" autocomplete="off"></label>
+      <div class="dialog-actions">
+        <button class="btn danger ghost" value="delete" id="deleteBtn" formnovalidate>Delete</button>
+        <span class="spacer"></span>
+        <button class="btn ghost" value="cancel" formnovalidate>Cancel</button>
+        <button class="btn primary" value="save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+  <script src="parser.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
