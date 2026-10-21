@@ -4,11 +4,18 @@
   const P = window.ReceiptParser;
   const CATS = P.CATEGORIES;
   const CAT_COLORS = {
-    Dining: '#e8833a', Groceries: '#3a9d5d', Transport: '#3b82c4', Shopping: '#a855c7', Travel: '#0ea5a4',
-    Subscriptions: '#d0478a', Bills: '#7c6f64', Health: '#d64545', Entertainment: '#c9a227', Other: '#8792a2',
+    Restaurants: '#e8833a', Groceries: '#3a9d5d', Transport: '#3b82c4', 'Gym/Fitness': '#0ea5a4', 'House Supplies': '#a0703f',
+    Social: '#d0478a', 'Dry Cleaning': '#6b8fb3', 'Personal Care': '#8b6fd6', Entertainment: '#c9a227', Misc: '#8792a2',
   };
+  // Categories from the first version of the app, mapped onto the current ones.
+  const OLD_CATEGORIES = {
+    Dining: 'Restaurants', Resturants: 'Restaurants', Shopping: 'House Supplies', Travel: 'Misc', Subscriptions: 'Entertainment',
+    Bills: 'Misc', Health: 'Personal Care', Other: 'Misc', 'Dry cleaning': 'Dry Cleaning',
+  };
+  const fixCategory = c => CATS.includes(c) ? c : (OLD_CATEGORIES[c] || 'Misc');
   const KEY_EXPENSES = 'receipt-tally.expenses.v1';
   const KEY_LEARNED = 'receipt-tally.learned.v1';
+  const KEY_BUDGETS = 'receipt-tally.budgets.v1';
   const money = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' });
   const $ = sel => document.querySelector(sel);
 
@@ -20,17 +27,33 @@
     try {
       localStorage.setItem(KEY_EXPENSES, JSON.stringify(state.expenses));
       localStorage.setItem(KEY_LEARNED, JSON.stringify(state.learned));
+      localStorage.setItem(KEY_BUDGETS, JSON.stringify(state.budgets));
     } catch (e) { toast('Could not save. Your browser storage may be full or blocked.'); }
+  }
+
+  // budgets: { default: {category: amount}, months: {'YYYY-MM': {category: amount}} }
+  function cleanBudgets(b) {
+    const fix = m => {
+      const out = {};
+      for (const [c, v] of Object.entries(m || {})) if (v > 0) out[fixCategory(c)] = (out[fixCategory(c)] || 0) + Number(v);
+      return out;
+    };
+    const months = {};
+    for (const [k, m] of Object.entries((b && b.months) || {})) months[k] = fix(m);
+    return { default: fix(b && b.default), months };
   }
 
   const now = new Date();
   const state = {
     expenses: load(KEY_EXPENSES, []),
     learned: load(KEY_LEARNED, {}),
+    budgets: cleanBudgets(load(KEY_BUDGETS, null)),
     month: new Date(now.getFullYear(), now.getMonth(), 1),
     jobs: [],
     search: '',
   };
+  state.expenses.forEach(e => { e.category = fixCategory(e.category); });
+  for (const k of Object.keys(state.learned)) state.learned[k] = fixCategory(state.learned[k]);
 
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -55,13 +78,53 @@
     return state.expenses.filter(e => e.date.slice(0, 7) === mk);
   }
 
+  // ---------- budgets ----------
+  const budgetFor = mk => state.budgets.months[mk] || state.budgets.default;
+  const sumValues = o => round2(Object.values(o || {}).reduce((s, v) => s + v, 0));
+  const spentByCat = mk => {
+    const out = {};
+    for (const e of state.expenses) if (e.date.slice(0, 7) === mk) out[e.category] = round2((out[e.category] || 0) + e.amount);
+    return out;
+  };
+  const fmtMoney0 = v => Math.abs(v) < 1 ? money.format(v) : money.format(Math.round(v)).replace(/\.00$/, '');
+
   function renderSummary() {
     const label = fmtMonth(state.month);
+    const mk = monthKey(state.month);
     $('#monthLabel').textContent = label;
     $('#sumMonth').textContent = label;
     const list = monthExpenses();
     const total = round2(list.reduce((s, e) => s + e.amount, 0));
     $('#monthTotal').textContent = money.format(total);
+
+    // Overall budget progress
+    const budget = budgetFor(mk);
+    const budgetTotal = sumValues(budget);
+    const prog = $('#budgetProgress');
+    if (budgetTotal > 0) {
+      const left = round2(budgetTotal - total);
+      const pct = Math.min(100, total / budgetTotal * 100);
+      const daysIn = new Date(state.month.getFullYear(), state.month.getMonth() + 1, 0).getDate();
+      const isCurrent = mk === monthKey(new Date());
+      let pace = '';
+      if (isCurrent) {
+        const day = new Date().getDate();
+        const expected = budgetTotal * day / daysIn;
+        const diff = total - expected;
+        pace = Math.abs(diff) < budgetTotal * 0.03 ? 'Right on pace for day ' + day + ' of ' + daysIn
+          : diff > 0 ? fmtMoney0(diff) + ' ahead of pace for day ' + day + ' of ' + daysIn
+          : fmtMoney0(-diff) + ' under pace for day ' + day + ' of ' + daysIn;
+      }
+      prog.hidden = false;
+      prog.innerHTML =
+        '<div class="meter' + (left < 0 ? ' over' : '') + '"><div style="width:' + pct.toFixed(1) + '%"></div>' +
+        (isCurrent ? '<i style="left:' + (new Date().getDate() / daysIn * 100).toFixed(1) + '%" title="Today"></i>' : '') + '</div>' +
+        '<div class="meter-text"><span>of ' + fmtMoney0(budgetTotal) + ' budget</span><strong class="' + (left < 0 ? 'bad' : 'good') + '">' +
+        (left < 0 ? fmtMoney0(-left) + ' over' : fmtMoney0(left) + ' left') + '</strong></div>' +
+        (pace ? '<div class="meta">' + esc(pace) + '</div>' : '');
+    } else {
+      prog.hidden = true;
+    }
 
     const prev = new Date(state.month.getFullYear(), state.month.getMonth() - 1, 1);
     const prevTotal = state.expenses.filter(e => e.date.slice(0, 7) === monthKey(prev)).reduce((s, e) => s + e.amount, 0);
@@ -72,16 +135,122 @@
     }
     $('#monthMeta').textContent = meta;
 
-    const byCat = {};
-    for (const e of list) byCat[e.category] = (byCat[e.category] || 0) + e.amount;
-    const rows = Object.entries(byCat).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
-    const max = rows.length ? rows[0][1] : 0;
-    $('#catBars').innerHTML = rows.length ? rows.map(([cat, v]) =>
-      '<div class="bar-row"><span>' + esc(cat) + '</span>' +
-      '<div class="bar-track"><div class="bar-fill" style="width:' + Math.max(2, v / max * 100).toFixed(1) + '%;background:' + (CAT_COLORS[cat] || CAT_COLORS.Other) + '"></div></div>' +
-      '<span class="bar-amt">' + money.format(v) + '</span></div>').join('')
+    // Per-category: spent vs budget
+    const byCat = spentByCat(mk);
+    const cats = CATS.filter(c => (byCat[c] || 0) > 0 || (budget[c] || 0) > 0)
+      .sort((a, b) => (byCat[b] || 0) - (byCat[a] || 0) || (budget[b] || 0) - (budget[a] || 0));
+    const max = Math.max(0, ...cats.map(c => byCat[c] || 0));
+    $('#budgetBtn').textContent = budgetTotal > 0 ? 'Edit budget' : 'Set a budget';
+    $('#catBars').innerHTML = cats.length ? cats.map(cat => {
+      const v = byCat[cat] || 0;
+      const b = budget[cat] || 0;
+      const color = CAT_COLORS[cat] || CAT_COLORS.Misc;
+      if (b > 0) {
+        const over = v > b;
+        return '<div class="bar-row"><span>' + esc(cat) + '</span>' +
+          '<div class="bar-track budgeted"><div class="bar-fill" style="width:' + Math.min(100, v / b * 100).toFixed(1) + '%;background:' + (over ? 'var(--bad)' : color) + '"></div></div>' +
+          '<span class="bar-amt">' + money.format(v) + '<small class="of"> / ' + fmtMoney0(b) + '</small>' +
+          '<small class="' + (over ? 'bad' : 'muted') + '">' + (over ? fmtMoney0(v - b) + ' over' : fmtMoney0(b - v) + ' left') + '</small></span></div>';
+      }
+      return '<div class="bar-row"><span>' + esc(cat) + '</span>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + Math.max(2, v / (max || 1) * 100).toFixed(1) + '%;background:' + color + '"></div></div>' +
+        '<span class="bar-amt">' + money.format(v) + (budgetTotal > 0 ? '<small class="muted">no budget</small>' : '') + '</span></div>';
+    }).join('')
       : '<div class="empty">Nothing yet this month. Drop a receipt above to get started.</div>';
   }
+
+  // Month-by-month: spent vs that month's budget.
+  function renderHistory() {
+    const months = new Set(state.expenses.map(e => e.date.slice(0, 7)));
+    months.add(monthKey(state.month));
+    const keys = Array.from(months).sort().reverse().slice(0, 12);
+    const rows = keys.map(k => {
+      const spent = round2(state.expenses.filter(e => e.date.slice(0, 7) === k).reduce((s, e) => s + e.amount, 0));
+      return { k, spent, budget: sumValues(budgetFor(k)) };
+    });
+    const max = Math.max(1, ...rows.map(r => Math.max(r.spent, r.budget)));
+    $('#history').innerHTML = rows.map(r => {
+      const d = new Date(+r.k.slice(0, 4), +r.k.slice(5, 7) - 1, 1);
+      const diff = r.budget > 0 ? r.budget - r.spent : null;
+      return '<button type="button" class="hist-row' + (r.k === monthKey(state.month) ? ' active' : '') + '" data-k="' + r.k + '">' +
+        '<span>' + esc(d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })) + '</span>' +
+        '<span class="hist-track"><span class="hist-fill' + (diff != null && diff < 0 ? ' over' : '') + '" style="width:' + (r.spent / max * 100).toFixed(1) + '%"></span>' +
+        (r.budget > 0 ? '<span class="hist-budget" style="left:' + (r.budget / max * 100).toFixed(1) + '%"></span>' : '') + '</span>' +
+        '<span class="bar-amt">' + money.format(r.spent) +
+        (diff == null ? '' : '<small class="' + (diff < 0 ? 'bad' : 'good') + '">' + (diff < 0 ? fmtMoney0(-diff) + ' over' : fmtMoney0(diff) + ' under') + '</small>') +
+        '</span></button>';
+    }).join('');
+  }
+  $('#history').addEventListener('click', e => {
+    const b = e.target.closest('.hist-row');
+    if (!b) return;
+    state.month = new Date(+b.dataset.k.slice(0, 4), +b.dataset.k.slice(5, 7) - 1, 1);
+    render();
+  });
+
+  // Budget editor
+  const bDlg = $('#budgetDialog');
+  const bForm = $('#budgetForm');
+  $('#budgetFields').innerHTML = CATS.map((c, i) =>
+    '<label class="bfield"><span><i class="dot" style="background:' + CAT_COLORS[c] + '"></i>' + esc(c) + '</span>' +
+    '<span class="money-in"><b>$</b><input type="number" min="0" step="5" inputmode="decimal" data-cat="' + esc(c) + '" placeholder="0"></span></label>').join('');
+  const bInputs = () => Array.from(bForm.querySelectorAll('input[data-cat]'));
+  function updateBudgetTotal() {
+    const t = bInputs().reduce((s, i) => s + (parseFloat(i.value) || 0), 0);
+    $('#budgetTotal').textContent = fmtMoney0(t);
+  }
+  bForm.addEventListener('input', updateBudgetTotal);
+
+  // Averages from complete months: with 3+ months of data, the first and last are likely partial.
+  function averageSpending() {
+    const current = monthKey(new Date());
+    let months = Array.from(new Set(state.expenses.map(e => e.date.slice(0, 7)))).filter(k => k !== current).sort();
+    if (months.length >= 3) months = months.slice(1, -1);
+    if (!months.length) return null;
+    const avg = {};
+    for (const k of months) for (const [c, v] of Object.entries(spentByCat(k))) avg[c] = (avg[c] || 0) + v / months.length;
+    return { avg, months };
+  }
+
+  function openBudget() {
+    const mk = monthKey(state.month);
+    const hasOverride = !!state.budgets.months[mk];
+    const b = budgetFor(mk);
+    bInputs().forEach(i => { i.value = b[i.dataset.cat] ? String(b[i.dataset.cat]) : ''; });
+    $('#scopeMonthLabel').textContent = 'Only ' + fmtMonth(state.month);
+    bForm.scope.value = hasOverride ? 'month' : 'all';
+    $('#clearOverride').hidden = !hasOverride;
+    const a = averageSpending();
+    const fill = $('#fillAverage');
+    fill.hidden = !a;
+    if (a) {
+      const names = a.months.map(k => new Date(+k.slice(0, 4), +k.slice(5, 7) - 1, 1).toLocaleDateString(undefined, { month: 'short' }));
+      fill.textContent = 'Fill in my average (' + (names.length > 2 ? names[0] + '–' + names[names.length - 1] : names.join(' & ')) + ')';
+    }
+    updateBudgetTotal();
+    bDlg.showModal();
+  }
+  $('#budgetBtn').onclick = openBudget;
+  $('#fillAverage').onclick = () => {
+    const a = averageSpending();
+    if (!a) return;
+    bInputs().forEach(i => { const v = a.avg[i.dataset.cat]; i.value = v ? String(Math.ceil(v / 5) * 5) : ''; });
+    updateBudgetTotal();
+  };
+  $('#clearOverride').onclick = () => {
+    delete state.budgets.months[monthKey(state.month)];
+    save(); render(); bDlg.close();
+    toast(fmtMonth(state.month) + ' now uses your regular budget.');
+  };
+  // React on submit rather than the dialog's close event, which some embedded browsers never fire.
+  bForm.addEventListener('submit', e => {
+    if (!e.submitter || e.submitter.value !== 'save') return;
+    const vals = {};
+    bInputs().forEach(i => { const v = round2(parseFloat(i.value) || 0); if (v > 0) vals[i.dataset.cat] = v; });
+    if (bForm.scope.value === 'month') state.budgets.months[monthKey(state.month)] = vals;
+    else state.budgets.default = vals;
+    save(); render();
+  });
 
   function renderList() {
     const q = state.search.trim().toLowerCase();
@@ -103,7 +272,7 @@
       return '<div class="day"><div class="day-label"><span>' + esc(label) + '</span><span>' + money.format(sum) + '</span></div>' +
         d.items.map(e =>
           '<div class="exp" data-id="' + esc(e.id) + '" tabindex="0" role="button">' +
-          '<span class="dot" style="background:' + (CAT_COLORS[e.category] || CAT_COLORS.Other) + '"></span>' +
+          '<span class="dot" style="background:' + (CAT_COLORS[e.category] || CAT_COLORS.Misc) + '"></span>' +
           '<div class="exp-main"><div class="exp-merchant">' + esc(e.merchant || 'Unknown') + '</div>' +
           '<div class="exp-sub">' + esc(e.category) + (e.note ? ' · ' + esc(e.note) : '') + '</div></div>' +
           '<div class="exp-amt' + (e.amount < 0 ? ' neg' : '') + '">' + money.format(e.amount) + '</div></div>').join('') +
@@ -111,7 +280,7 @@
     }).join('');
   }
 
-  function render() { renderSummary(); renderList(); }
+  function render() { renderSummary(); renderHistory(); renderList(); }
 
   $('#list').addEventListener('click', e => {
     const row = e.target.closest('.exp');
@@ -138,7 +307,7 @@
     form.amount.value = exp ? exp.amount.toFixed(2) : '';
     const today = P.isoOf(new Date());
     form.date.value = exp ? exp.date : (monthKey(state.month) === today.slice(0, 7) ? today : monthKey(state.month) + '-01');
-    form.category.value = exp ? exp.category : 'Other';
+    form.category.value = exp ? exp.category : 'Misc';
     form.note.value = exp ? exp.note || '' : '';
     dlg.showModal();
     if (!exp) form.merchant.focus();
@@ -148,9 +317,8 @@
     if (!editing) form.category.value = P.categorize(form.merchant.value, '', state.learned);
   });
 
-  dlg.addEventListener('close', () => {
-    const action = dlg.returnValue;
-    dlg.returnValue = '';
+  form.addEventListener('submit', e => {
+    const action = e.submitter && e.submitter.value;
     if (action === 'delete' && editing) {
       const removed = editing;
       state.expenses = state.expenses.filter(x => x.id !== removed.id);
@@ -382,7 +550,7 @@
     addRow.className = 'btn small ghost'; addRow.type = 'button'; addRow.textContent = '+ Add a row';
     addRow.onclick = () => {
       if (job.status === 'error') { job.status = 'done'; job.text = ''; }
-      job.items.push({ key: uid(), date: P.isoOf(new Date()), merchant: '', amount: 0, category: 'Other', autoCategory: 'Other', checked: true });
+      job.items.push({ key: uid(), date: P.isoOf(new Date()), merchant: '', amount: 0, category: 'Misc', autoCategory: 'Misc', checked: true });
       refreshJob(job);
       const inputs = document.querySelectorAll('.job[data-id="' + job.id + '"] .f-merchant');
       if (inputs.length) inputs[inputs.length - 1].focus();
@@ -540,7 +708,7 @@
   };
   $('#backup').onclick = () => {
     download('receipt-tally-backup-' + P.isoOf(new Date()) + '.json',
-      JSON.stringify({ version: 1, expenses: state.expenses, learned: state.learned }, null, 2), 'application/json');
+      JSON.stringify({ version: 1, expenses: state.expenses, learned: state.learned, budgets: state.budgets }, null, 2), 'application/json');
   };
   $('#restoreBtn').onclick = () => $('#restoreInput').click();
   $('#restoreInput').addEventListener('change', async e => {
@@ -552,8 +720,19 @@
       const incoming = (data.expenses || []).filter(x => x && x.id && x.date && typeof x.amount === 'number');
       const have = new Set(state.expenses.map(x => x.id));
       const fresh = incoming.filter(x => !have.has(x.id));
+      fresh.forEach(x => { x.category = fixCategory(x.category); });
       state.expenses.push(...fresh);
-      Object.assign(state.learned, data.learned || {});
+      for (const [k, c] of Object.entries(data.learned || {})) state.learned[k] = fixCategory(c);
+      if (data.budgets) {
+        const b = cleanBudgets(data.budgets);
+        if (!sumValues(state.budgets.default)) state.budgets.default = b.default;
+        state.budgets.months = Object.assign(b.months, state.budgets.months);
+      }
+      // Show the restored data if the month on screen has none.
+      if (fresh.length && !monthExpenses().length) {
+        const latest = fresh.map(x => x.date).sort().pop();
+        state.month = new Date(+latest.slice(0, 4), +latest.slice(5, 7) - 1, 1);
+      }
       save(); render();
       toast('Restored ' + fresh.length + ' expense' + (fresh.length === 1 ? '' : 's') + (incoming.length - fresh.length ? ' (' + (incoming.length - fresh.length) + ' already here)' : '') + '.');
     } catch (err) { toast("That file isn't a Receipt Tally backup."); }

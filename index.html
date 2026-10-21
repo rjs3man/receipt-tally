@@ -47,13 +47,23 @@
     </section>
 
     <section class="summary">
-      <div class="card total-card">
-        <div class="label">Spent in <span id="sumMonth"></span></div>
-        <div id="monthTotal" class="big">$0.00</div>
-        <div id="monthMeta" class="meta"></div>
+      <div class="stack">
+        <div class="card total-card">
+          <div class="label">Spent in <span id="sumMonth"></span></div>
+          <div id="monthTotal" class="big">$0.00</div>
+          <div id="budgetProgress" class="budget-progress" hidden></div>
+          <div id="monthMeta" class="meta"></div>
+        </div>
+        <div class="card">
+          <div class="label">Month by month</div>
+          <div id="history" class="history"></div>
+        </div>
       </div>
       <div class="card">
-        <div class="label">By category</div>
+        <div class="card-head">
+          <div class="label">By category</div>
+          <button class="btn small" id="budgetBtn" type="button">Set a budget</button>
+        </div>
         <div id="catBars" class="bars"></div>
       </div>
     </section>
@@ -91,6 +101,26 @@
         <span class="spacer"></span>
         <button class="btn ghost" value="cancel" formnovalidate>Cancel</button>
         <button class="btn primary" value="save">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="budgetDialog" class="budget-dialog">
+    <form method="dialog" id="budgetForm">
+      <h3>Monthly budget</h3>
+      <p class="muted dialog-sub">Set how much you plan to spend in each category. Leave a category blank to skip it.</p>
+      <button class="btn small" type="button" id="fillAverage">Fill in my average</button>
+      <div id="budgetFields" class="bfields"></div>
+      <div class="btotal"><span>Total per month</span><strong id="budgetTotal">$0</strong></div>
+      <fieldset class="scope">
+        <label><input type="radio" name="scope" value="all" checked> Every month</label>
+        <label><input type="radio" name="scope" value="month"> <span id="scopeMonthLabel">Only this month</span></label>
+      </fieldset>
+      <div class="dialog-actions">
+        <button class="btn ghost small" type="button" id="clearOverride" hidden>Use regular budget for this month</button>
+        <span class="spacer"></span>
+        <button class="btn ghost" value="cancel" formnovalidate>Cancel</button>
+        <button class="btn primary" value="save">Save budget</button>
       </div>
     </form>
   </dialog>

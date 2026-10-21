@@ -5,9 +5,10 @@ Screenshot a receipt (or your card app's transaction list), drop it in, and the 
 - **Drop, choose, or paste** (Ctrl+V) screenshots. Several at once is fine.
 - **Reads the text on your device** with [Tesseract.js](https://github.com/naptha/tesseract.js). Images are never uploaded.
 - Finds the **total, date, and merchant** on a receipt, or **every transaction** in a card-app or statement screenshot. Payments and refunds are left unchecked.
-- **Auto-categorizes** (Dining, Groceries, Transport…) and learns from your corrections.
+- **Auto-categorizes** into Restaurants, Groceries, Transport, Gym/Fitness, House Supplies, Social, Dry Cleaning, Personal Care, Entertainment, and Misc, and learns from your corrections.
 - Flags **possible duplicates** before you add them.
-- Monthly total, category breakdown, search, edit, and **CSV export** / JSON backup.
+- **Monthly budget** per category: set it once for every month or override a single month, fill it from your average spending, and see spent vs. budget, money left, and whether you're on pace.
+- Month-by-month history against budget, category breakdown, search, edit, and **CSV export** / JSON backup.
 
 Expenses are stored in your browser's local storage, so they stay on the device you use. Use **Back up data** to move them to another device.
 

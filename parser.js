@@ -3,51 +3,55 @@
 (function (global) {
   'use strict';
 
-  const CATEGORIES = ['Dining', 'Groceries', 'Transport', 'Shopping', 'Travel', 'Subscriptions', 'Bills', 'Health', 'Entertainment', 'Other'];
+  const CATEGORIES = ['Restaurants', 'Groceries', 'Transport', 'Gym/Fitness', 'House Supplies', 'Social', 'Dry Cleaning', 'Personal Care', 'Entertainment', 'Misc'];
 
   // Known merchants: [match text, display name, category]
   const BRANDS = [
-    ['starbucks', 'Starbucks', 'Dining'], ['dunkin', "Dunkin'", 'Dining'], ['mcdonald', "McDonald's", 'Dining'],
-    ['chipotle', 'Chipotle', 'Dining'], ['sweetgreen', 'Sweetgreen', 'Dining'], ['chick-fil-a', 'Chick-fil-A', 'Dining'],
-    ['panera', 'Panera Bread', 'Dining'], ['shake shack', 'Shake Shack', 'Dining'], ['subway', 'Subway', 'Dining'],
-    ['doordash', 'DoorDash', 'Dining'], ['grubhub', 'Grubhub', 'Dining'], ['uber eats', 'Uber Eats', 'Dining'],
-    ['domino', "Domino's", 'Dining'], ['taco bell', 'Taco Bell', 'Dining'], ['wendy', "Wendy's", 'Dining'],
-    ['whole foods', 'Whole Foods', 'Groceries'], ["trader joe", "Trader Joe's", 'Groceries'], ['safeway', 'Safeway', 'Groceries'],
-    ['kroger', 'Kroger', 'Groceries'], ['wegmans', 'Wegmans', 'Groceries'], ['aldi', 'Aldi', 'Groceries'],
-    ['acme', 'Acme', 'Groceries'], ['giant', 'Giant', 'Groceries'], ['publix', 'Publix', 'Groceries'],
-    ['instacart', 'Instacart', 'Groceries'], ['costco', 'Costco', 'Groceries'], ['sprouts', 'Sprouts', 'Groceries'],
-    ['lyft', 'Lyft', 'Transport'], ['uber', 'Uber', 'Transport'], ['shell', 'Shell', 'Transport'],
-    ['exxon', 'Exxon', 'Transport'], ['chevron', 'Chevron', 'Transport'], ['sunoco', 'Sunoco', 'Transport'],
-    ['wawa', 'Wawa', 'Transport'], ['septa', 'SEPTA', 'Transport'], ['amtrak', 'Amtrak', 'Transport'],
-    ['mta', 'MTA', 'Transport'], ['e-zpass', 'E-ZPass', 'Transport'], ['ezpass', 'E-ZPass', 'Transport'],
-    ['amazon', 'Amazon', 'Shopping'], ['target', 'Target', 'Shopping'], ['walmart', 'Walmart', 'Shopping'],
-    ['best buy', 'Best Buy', 'Shopping'], ['apple store', 'Apple Store', 'Shopping'], ['nike', 'Nike', 'Shopping'],
-    ['uniqlo', 'Uniqlo', 'Shopping'], ['zara', 'Zara', 'Shopping'], ['etsy', 'Etsy', 'Shopping'], ['ebay', 'eBay', 'Shopping'],
-    ['ikea', 'IKEA', 'Shopping'], ['home depot', 'Home Depot', 'Shopping'], ['lowe', "Lowe's", 'Shopping'],
-    ['delta', 'Delta', 'Travel'], ['united airlines', 'United Airlines', 'Travel'], ['american airlines', 'American Airlines', 'Travel'],
-    ['southwest', 'Southwest', 'Travel'], ['jetblue', 'JetBlue', 'Travel'], ['marriott', 'Marriott', 'Travel'],
-    ['hilton', 'Hilton', 'Travel'], ['hyatt', 'Hyatt', 'Travel'], ['airbnb', 'Airbnb', 'Travel'], ['expedia', 'Expedia', 'Travel'],
-    ['netflix', 'Netflix', 'Subscriptions'], ['spotify', 'Spotify', 'Subscriptions'], ['hulu', 'Hulu', 'Subscriptions'],
-    ['disney+', 'Disney+', 'Subscriptions'], ['youtube', 'YouTube', 'Subscriptions'], ['icloud', 'iCloud', 'Subscriptions'],
-    ['adobe', 'Adobe', 'Subscriptions'], ['openai', 'OpenAI', 'Subscriptions'], ['anthropic', 'Anthropic', 'Subscriptions'],
-    ['patreon', 'Patreon', 'Subscriptions'], ['audible', 'Audible', 'Subscriptions'],
-    ['verizon', 'Verizon', 'Bills'], ['at&t', 'AT&T', 'Bills'], ['t-mobile', 'T-Mobile', 'Bills'], ['comcast', 'Comcast', 'Bills'],
-    ['xfinity', 'Xfinity', 'Bills'], ['peco', 'PECO', 'Bills'], ['con edison', 'Con Edison', 'Bills'],
-    ['cvs', 'CVS', 'Health'], ['walgreens', 'Walgreens', 'Health'], ['rite aid', 'Rite Aid', 'Health'],
-    ['equinox', 'Equinox', 'Health'], ['planet fitness', 'Planet Fitness', 'Health'], ['orangetheory', 'Orangetheory', 'Health'],
-    ['amc', 'AMC Theatres', 'Entertainment'], ['ticketmaster', 'Ticketmaster', 'Entertainment'], ['steam', 'Steam', 'Entertainment'],
-    ['playstation', 'PlayStation', 'Entertainment'], ['xbox', 'Xbox', 'Entertainment'], ['stubhub', 'StubHub', 'Entertainment'],
+    ['starbucks', 'Starbucks', 'Restaurants'], ['dunkin', "Dunkin'", 'Restaurants'], ['mcdonald', "McDonald's", 'Restaurants'],
+    ['chipotle', 'Chipotle', 'Restaurants'], ['sweetgreen', 'Sweetgreen', 'Restaurants'], ['chick-fil-a', 'Chick-fil-A', 'Restaurants'],
+    ['panera', 'Panera Bread', 'Restaurants'], ['shake shack', 'Shake Shack', 'Restaurants'], ['cava', 'Cava', 'Restaurants'],
+    ['doordash', 'DoorDash', 'Restaurants'], ['grubhub', 'Grubhub', 'Restaurants'], ['seamless', 'Seamless', 'Restaurants'],
+    ['uber eats', 'Uber Eats', 'Restaurants'], ['domino', "Domino's", 'Restaurants'], ['dos toros', 'Dos Toros', 'Restaurants'],
+    ['joe & the juice', 'Joe & The Juice', 'Restaurants'], ['blank street', 'Blank Street', 'Restaurants'], ['pret a manger', 'Pret A Manger', 'Restaurants'],
+    ['whole foods', 'Whole Foods', 'Groceries'], ['trader joe', "Trader Joe's", 'Groceries'], ['morton williams', 'Morton Williams', 'Groceries'],
+    ['key food', 'Key Food', 'Groceries'], ['gristedes', 'Gristedes', 'Groceries'], ["d'agostino", "D'Agostino", 'Groceries'],
+    ['fairway', 'Fairway', 'Groceries'], ['westside market', 'Westside Market', 'Groceries'], ['food bazaar', 'Food Bazaar', 'Groceries'],
+    ['wegmans', 'Wegmans', 'Groceries'], ['aldi', 'Aldi', 'Groceries'], ['instacart', 'Instacart', 'Groceries'],
+    ['fresh direct', 'FreshDirect', 'Groceries'], ['freshdirect', 'FreshDirect', 'Groceries'], ['costco', 'Costco', 'Groceries'],
+    ['safeway', 'Safeway', 'Groceries'], ['kroger', 'Kroger', 'Groceries'], ['publix', 'Publix', 'Groceries'], ['sprouts', 'Sprouts', 'Groceries'],
+    ['mta', 'MTA', 'Transport'], ['omny', 'MTA', 'Transport'], ['metrocard', 'MTA', 'Transport'], ['lirr', 'LIRR', 'Transport'],
+    ['nj transit', 'NJ Transit', 'Transport'], ['path', 'PATH', 'Transport'], ['citi bike', 'Citi Bike', 'Transport'], ['citibike', 'Citi Bike', 'Transport'],
+    ['lyft', 'Lyft', 'Transport'], ['uber', 'Uber', 'Transport'], ['revel', 'Revel', 'Transport'], ['curb', 'Curb', 'Transport'],
+    ['amtrak', 'Amtrak', 'Transport'], ['septa', 'SEPTA', 'Transport'], ['metro-north', 'Metro-North', 'Transport'],
+    ['e-zpass', 'E-ZPass', 'Transport'], ['ezpass', 'E-ZPass', 'Transport'], ['shell', 'Shell', 'Transport'], ['exxon', 'Exxon', 'Transport'],
+    ['soulcycle', 'SoulCycle', 'Gym/Fitness'], ['soul cycle', 'SoulCycle', 'Gym/Fitness'], ['crunch', 'Crunch', 'Gym/Fitness'],
+    ['equinox', 'Equinox', 'Gym/Fitness'], ['planet fitness', 'Planet Fitness', 'Gym/Fitness'], ['blink fitness', 'Blink Fitness', 'Gym/Fitness'],
+    ['orangetheory', 'Orangetheory', 'Gym/Fitness'], ["barry's", "Barry's", 'Gym/Fitness'], ['classpass', 'ClassPass', 'Gym/Fitness'],
+    ['rumble', 'Rumble', 'Gym/Fitness'], ['f45', 'F45', 'Gym/Fitness'], ['peloton', 'Peloton', 'Gym/Fitness'], ['mindbody', 'Mindbody', 'Gym/Fitness'],
+    ['target', 'Target', 'House Supplies'], ['walmart', 'Walmart', 'House Supplies'], ['home depot', 'Home Depot', 'House Supplies'],
+    ['amazon', 'Amazon', 'House Supplies'], ['ikea', 'IKEA', 'House Supplies'], ['bed bath', 'Bed Bath & Beyond', 'House Supplies'],
+    ['container store', 'The Container Store', 'House Supplies'], ["lowe's", "Lowe's", 'House Supplies'], ['walgreens', 'Walgreens', 'House Supplies'],
+    ['cvs', 'CVS', 'Personal Care'], ['duane reade', 'Duane Reade', 'Personal Care'], ['rite aid', 'Rite Aid', 'Personal Care'],
+    ['sephora', 'Sephora', 'Personal Care'], ['ulta', 'Ulta', 'Personal Care'], ['hims', 'Hims', 'Personal Care'],
+    ['amc', 'AMC Theatres', 'Entertainment'], ['regal', 'Regal', 'Entertainment'], ['ticketmaster', 'Ticketmaster', 'Entertainment'],
+    ['stubhub', 'StubHub', 'Entertainment'], ['seatgeek', 'SeatGeek', 'Entertainment'], ['netflix', 'Netflix', 'Entertainment'],
+    ['spotify', 'Spotify', 'Entertainment'], ['hulu', 'Hulu', 'Entertainment'], ['disney+', 'Disney+', 'Entertainment'],
+    ['youtube', 'YouTube', 'Entertainment'], ['steam', 'Steam', 'Entertainment'], ['playstation', 'PlayStation', 'Entertainment'],
+    ['eventbrite', 'Eventbrite', 'Social'], ['partiful', 'Partiful', 'Social'], ['splitwise', 'Splitwise', 'Social'],
+    ['icloud', 'iCloud', 'Misc'], ['openai', 'OpenAI', 'Misc'], ['anthropic', 'Anthropic', 'Misc'], ['verizon', 'Verizon', 'Misc'],
+    ['at&t', 'AT&T', 'Misc'], ['t-mobile', 'T-Mobile', 'Misc'], ['con edison', 'Con Edison', 'Misc'], ['usps', 'USPS', 'Misc'],
   ];
 
   const KEYWORDS = {
-    Dining: ['restaurant', 'cafe', 'café', 'coffee', 'pizza', 'pizzeria', 'grill', 'kitchen', 'bistro', 'taco', 'burger', 'sushi', 'bakery', 'diner', 'tavern', 'pub', 'bar', 'ramen', 'deli', 'espresso', 'server', 'table', 'gratuity', 'tip'],
-    Groceries: ['grocery', 'market', 'supermarket', 'produce', 'foods'],
-    Transport: ['gas', 'fuel', 'parking', 'transit', 'toll', 'taxi', 'cab', 'rideshare', 'unleaded', 'gallons'],
-    Travel: ['airlines', 'airline', 'hotel', 'inn', 'resort', 'flight', 'airport'],
-    Subscriptions: ['subscription', 'monthly plan', 'membership'],
-    Bills: ['electric', 'utility', 'internet', 'wireless', 'water', 'insurance', 'rent'],
-    Health: ['pharmacy', 'clinic', 'dental', 'medical', 'gym', 'fitness', 'rx', 'doctor'],
-    Entertainment: ['cinema', 'theater', 'theatre', 'tickets', 'concert', 'museum', 'bowling'],
+    Restaurants: ['restaurant', 'cafe', 'café', 'coffee', 'matcha', 'tea', 'bagel', 'pizza', 'pizzeria', 'slice', 'grill', 'kitchen', 'bistro', 'taco', 'burger', 'sushi', 'bakery', 'diner', 'ramen', 'halal', 'gyro', 'kabab', 'kebab', 'dim sum', 'thai', 'korean', 'deli', 'espresso', 'dinner', 'lunch', 'brunch', 'server', 'table', 'gratuity'],
+    Groceries: ['grocery', 'groceries', 'market', 'supermarket', 'produce', 'foods', 'bodega'],
+    Transport: ['subway', 'transit', 'parking', 'toll', 'taxi', 'cab', 'rideshare', 'gas', 'fuel', 'train', 'ferry'],
+    'Gym/Fitness': ['gym', 'fitness', 'yoga', 'pilates', 'cycle', 'climbing', 'boxing'],
+    'House Supplies': ['hardware', 'home goods', 'homegoods', 'supplies', 'household'],
+    'Dry Cleaning': ['dry clean', 'dry cleaning', 'cleaners', 'laundry', 'laundromat', 'wash & fold', 'wash and fold', 'tailor'],
+    'Personal Care': ['barber', 'barbers', 'salon', 'haircut', 'spa', 'nails', 'pharmacy', 'rx', 'dental', 'clinic', 'doctor'],
+    Entertainment: ['bar', 'pub', 'tavern', 'lounge', 'brewery', 'cocktail', 'martini', 'martinis', 'cinema', 'theater', 'theatre', 'tickets', 'concert', 'museum', 'bowling', 'arcade', 'book store', 'bookstore', 'books'],
+    Social: ['venmo', 'zelle', 'gift', 'party', 'birthday'],
   };
 
   const MONTHS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
@@ -150,16 +154,28 @@
     return null;
   }
 
-  function normMerchant(s) { return (s || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+  // "Trader Joe's #552" and "TRADER JOES" both become "trader joes 552" / "trader joes".
+  function normMerchant(s) { return (s || '').toLowerCase().replace(/['’`]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); }
+
+  // Categories the person picked before win, first by exact name, then by a known name inside a longer one.
+  function learnedCategory(key, learned) {
+    if (!learned || !key) return null;
+    if (learned[key]) return learned[key];
+    let best = null;
+    for (const k of Object.keys(learned)) {
+      if (k.length >= 4 && (' ' + key + ' ').includes(' ' + k + ' ') && (!best || k.length > best.length)) best = k;
+    }
+    return best ? learned[best] : null;
+  }
 
   function categorize(merchant, context, learned) {
-    const key = normMerchant(merchant);
-    if (learned && key && learned[key]) return learned[key];
+    const fromLearned = learnedCategory(normMerchant(merchant), learned);
+    if (fromLearned && CATEGORIES.includes(fromLearned)) return fromLearned;
     const brand = findBrand(merchant) || (context ? findBrand(context) : null);
     if (brand) return brand.cat;
     const hay = (merchant + ' ' + (context || '')).toLowerCase();
     for (const cat of Object.keys(KEYWORDS)) if (KEYWORDS[cat].some(w => hasWord(hay, w))) return cat;
-    return 'Other';
+    return 'Misc';
   }
 
   function letters(s) { return (s.match(/[a-z]/gi) || []).length; }
